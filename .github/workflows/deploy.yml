@@ -1,62 +1,18 @@
-name: Build and Deploy Frontend
+name: Deploy Frontend
 
 on:
   push:
     branches:
-    - main
+    # - main
+    - esteira
   workflow_dispatch:
 
 
-env:
-  IMAGE_NAME: abralimp-frontend
-  REGISTRY: ghcr.io
-
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata (tags, labels)
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_BRANCH}}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
   deploy:
-    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-    - name: Deploy to server
+    - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -64,17 +20,6 @@ jobs:
         key: ${{ secrets.VPS_KEY }}
         port: 22
         script: |
-          # Navegar para o diretório da aplicação
-          cd ${{ secrets.APP_PATH || '/root/abralimp-deploy' }}
-
-          # Login no GitHub Container Registry
-          echo ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-          # Pull da imagem mais recente
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-
-          # Recrear container com a nova imagem
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate
-
-          # Limpar imagens antigas
-          docker image prune -f
+          cd /root/apps/abralimp-deploy
+          git pull origin main
+          docker compose up -d --build
