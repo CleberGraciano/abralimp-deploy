@@ -2,9 +2,8 @@ version: '3.8'
 
 services:
   frontend:
-    build:
-      context: .
-    image: versao-bralimp-frontend:latest
+    image: ghcr.io/clebergraciano/abralimp-frontend:latest
+    # Usa a imagem do registry ao invés de buildar localmente
     ports:
       - "88:80"
     restart: unless-stopped

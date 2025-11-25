@@ -4,7 +4,7 @@ FROM nginx:stable-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy build output (assumes this folder already contains the Angular build files)
-COPY . /usr/share/nginx/html
+COPY ./frontend/ /usr/share/nginx/html
 
 EXPOSE 80
 
