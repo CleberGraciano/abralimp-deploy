@@ -21,6 +21,6 @@ jobs:
         port: 22
         script: |
           cd /root/apps/abralimp-deploy
-          git checkout esteira
-          git pull origin esteira
+          git checkout main
+          git pull origin main
           docker compose up -d --build
