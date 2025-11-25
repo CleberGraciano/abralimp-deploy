@@ -51,18 +51,30 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-  # Opcional: adicione job de deploy para servidor específico
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
     - name: Deploy to server
-      uses: appleboy/ssh-action@v1.0.0
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_KEY }}
+        port: 22
         script: |
-          cd /path/to/app
-          docker compose pull
-          docker compose up -d --force-recreate
+          # Navegar para o diretório da aplicação
+          cd ${{ secrets.APP_PATH || '/root/abralimp-deploy' }}
+
+          # Login no GitHub Container Registry
+          echo ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Pull da imagem mais recente
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+
+          # Recrear container com a nova imagem
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate
+
+          # Limpar imagens antigas
+          docker image prune -f
